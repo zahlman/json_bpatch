@@ -29,3 +29,35 @@ class Pointer:
         if remainder:
             raise ValueError("Improperly aligned address")
         return bytes((value >> shift) & 0xff for shift in self._shifts)
+
+
+def gcd(x, y):
+    """Iterative implementation of Euclid's algorithm."""
+    if x < y:
+        x, y = y, x
+    while x > y and y != 0:
+        x, y = y, x % y
+    return x
+
+
+def range_intersect(x, y):
+    """Compute a range containing values only seen in both input range objects.
+    The result range may be empty. Step values must be positive."""
+    if x.start > y.start: # Normalize.
+        x, y = y, x
+
+    stop = min(x.stop, y.stop)
+    # Check that the start points are congruent modulo the gcd of strides.
+    stride_gcd = gcd(x.step, y.step)
+    step = x.step * y.step // stride_gcd # lcm
+    start = stop # default result: empty range
+    if x.start % stride_gcd == y.start % stride_gcd:
+        # The sequences line up eventually; check values from y until we find
+        # one that's in x, or exceed the stopping point.
+        # There doesn't seem to be a neater approach; in the worst case, this
+        # is apparently equivalent to decrypting RSA.
+        try:
+            start = next(v for v in range(y.start, stop, y.step) if v in x)
+        except StopIteration:
+            pass # couldn't find a start point.
+    return range(start, stop, step)
