@@ -52,9 +52,7 @@ class Patch:
         # Ensure the rom is long enough that we can start writing at 'where'.
         # Multiplying a list by a negative value produces an empty list, so
         # the resulting behaviour is what we want.
-        print("WRITING AT:", where)
         rom.extend([0] * (where - len(rom)))
-        print("ROM NOW:", rom)
         # Write the individual components.
         for component in self._components:
             data = component.data(fit)
