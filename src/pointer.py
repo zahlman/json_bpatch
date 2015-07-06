@@ -12,6 +12,11 @@ class Pointer:
         s = range(0, bits, 8)
         self._shifts = reversed(s) if bigendian else s
         self._stride = stride
+        self._size = size
+
+
+    def __len__(self):
+        return self._size
 
 
     @property
