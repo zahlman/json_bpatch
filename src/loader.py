@@ -1,5 +1,6 @@
 from collections import ChainMap
 from functools import partial
+import json
 from patch import Datum, NamedPointer, Patch
 from pointer import Pointer
 
@@ -55,7 +56,7 @@ def item_factory(defaults):
     })
 
 
-def load(defaults, parsed_json):
+def load(parsed_json, defaults):
     if not isinstance(parsed_json, dict):
         raise ValueError('data must be a JSON object with Patches as values')
     make_item = item_factory(defaults)
@@ -66,3 +67,12 @@ def load_patch(item_loader, name, patch):
     if not isinstance(patch, list):
         raise ValueError('Patch must be a JSON array of Patch items')
     return Patch(name, list(map(item_loader, patch)))
+
+
+def get_json(filename):
+    with open(filename) as f:
+        return json.load(f)
+
+
+def load_files(patch_file, defaults_file):
+    return load(get_json(patch_file), get_json(defaults_file))
