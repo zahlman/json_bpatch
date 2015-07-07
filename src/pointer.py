@@ -1,5 +1,6 @@
 class Pointer:
-    def __init__(self, offset, size, align, stride, signed, bigendian):
+    def __init__(self, ref, offset, size, align, stride, signed, bigendian):
+        self._referent = ref
         self._offset = offset
         self._mask = align - 1
         bits = size * 8 
@@ -27,8 +28,10 @@ class Pointer:
         return self._gamut
 
 
-    def data(self, address):
-        """The bytes used by a pointer of this type to the given address."""
+    def data(self, fit):
+        """The bytes used by this pointer, given the specified fit map.
+        The referent of this pointer must be mentioned in the map."""
+        address = fit[self._referent]
         if not self._gamut.start <= address < self._gamut.stop:
             raise ValueError("Address out of bounds")
         if address not in self._gamut:

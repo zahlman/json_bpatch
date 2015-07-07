@@ -1,17 +1,3 @@
-class NamedPointer:
-    def __init__(self, name, pointer):
-        self._name = name
-        self._pointer = pointer
-
-
-    def __len__(self):
-        return len(self._pointer)
-
-
-    def data(self, fit):
-        return self._pointer.data(fit[self._name])
-
-
 class Datum:
     def __init__(self, raw):
         self._raw = raw
@@ -28,7 +14,7 @@ class Datum:
 class Patch:
     """Represents a contiguous chunk of data to be written by the patcher,
     specified as a sequence of either Datum objects (representing fixed byte
-    sequences) or NamedPointer objects (whose value encodes the location of
+    sequences) or Pointer objects (whose value encodes the location of
     another Patch)."""
     def __init__(self, name, components):
         self._name = name
@@ -43,7 +29,7 @@ class Patch:
         """Write the patch data to the `rom`, if it's part of the `fit`.
         `rom` -> `bytearray` representing the entire file being written into.
         `fit` -> map of (str: name of patch) -> (int: location to write).
-        The `fit` is also used by NamedPointers to compute their values."""
+        The `fit` is also used by Pointers to compute their values."""
         try:
             where = fit[self._name]
         except KeyError:

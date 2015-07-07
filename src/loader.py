@@ -1,7 +1,7 @@
 from collections import ChainMap
 from functools import partial
 import json
-from patch import Datum, NamedPointer, Patch
+from patch import Datum, Patch
 from pointer import Pointer
 
 
@@ -14,7 +14,7 @@ def get_param(params, expected_type, name):
     return value
 
 
-def make_named_pointer(defaults, settings):
+def make_pointer(defaults, settings):
     params = ChainMap(settings, defaults)
     offset = get_param(params, int, 'offset')
     size = get_param(params, int, 'size')
@@ -28,16 +28,14 @@ def make_named_pointer(defaults, settings):
         raise ValueError('align must be a power of two')
     # Should not appear in the `defaults`, and always be specified.
     referent = get_param(params, str, 'referent')
-    return NamedPointer(
-        referent, Pointer(offset, size, align, stride, signed, bigendian)
-    )
+    return Pointer(referent, offset, size, align, stride, signed, bigendian)
 
 
 def make_item_with_defaults(defaults, data):
     if isinstance(data, str):
         return Datum(bytes(data, 'ascii')) # temporary!
     elif isinstance(data, dict):
-        return make_named_pointer(defaults, data)
+        return make_pointer(defaults, data)
     else:
         raise ValueError('Patch item must be a Datum or a Pointer')
 
