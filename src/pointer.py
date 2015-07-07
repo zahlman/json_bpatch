@@ -1,15 +1,34 @@
 class Pointer:
-    def __init__(self, offset, size, stride, signed, bigendian):
+    def __init__(self, offset, size, align, stride, signed, bigendian):
+        # Note deliberately strict, 'unpythonic' type-checking here.
+        # Want to make sure that the input JSON doesn't do anything strange.
+        for name, param in (
+            ('offset', offset),
+            ('size', size),
+            ('align', align),
+            ('stride', stride)
+        ):
+            if type(param) != int:
+                raise TypeError('{} must be an integer'.format(name))
+        for name, param in (('signed', signed), ('bigendian', bigendian)):
+            if type(param) != bool:
+                raise TypeError('{} must be boolean'.format(name))
+        if size < 0:
+            raise ValueError('size cannot be negative')
+        if align < 1 or (align & (align - 1)):
+            raise ValueError('align must be a power of two')
+
         self._offset = offset
-        bits = size * 8
+        self._mask = align - 1
+        bits = size * 8 
         low = -((1 << bits) >> 1) if signed else 0
         high = 0 if size == 0 else ((1 << bits) - 1 + low)
         self._gamut = range(
             stride * (low if stride > 0 else high) + offset,
             stride * (high if stride > 0 else low) + offset + 1,
-            abs(stride)
+            abs(stride) * align
         )
-        s = range(0, bits, 8)
+        s = range(0, size * 8, 8)
         self._shifts = reversed(s) if bigendian else s
         self._stride = stride
         self._size = size
@@ -30,9 +49,9 @@ class Pointer:
         """The bytes used by a pointer of this type to the given address."""
         if not self._gamut.start <= address < self._gamut.stop:
             raise ValueError("Address out of bounds")
-        value, remainder = divmod((address - self._offset), self._stride)
-        if remainder:
+        if address not in self._gamut:
             raise ValueError("Improperly aligned address")
+        value = (address - self._offset) // self._stride
         return bytes((value >> shift) & 0xff for shift in self._shifts)
 
 
