@@ -11,6 +11,10 @@ class Datum:
         return self._raw
 
 
+    def constrain(self, candidate_map):
+        pass
+
+
     def __repr__(self):
         return '<Datum: "{}">'.format(self._raw)
 
@@ -27,6 +31,13 @@ class Patch:
 
     def __len__(self):
         return sum(len(component) for component in self._components)
+
+
+    def constrain(self, candidate_map):
+        for component in self._components:
+            result = component.constrain(candidate_map)
+            if result is not None:
+                yield result
 
 
     def write_into(self, rom, fit_map):

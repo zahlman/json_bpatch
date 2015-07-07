@@ -29,7 +29,7 @@ class Pointer:
 
 
     def data(self, fit_map):
-        """The bytes used by this pointer, given the specified fit_map map.
+        """The bytes used by this pointer, given the specified `fit_map`.
         The referent of this pointer must be mentioned in the map."""
         address = fit_map[self._referent]
         if not self._gamut.start <= address < self._gamut.stop:
@@ -38,6 +38,13 @@ class Pointer:
             raise ValueError("Improperly aligned address")
         value = (address - self._offset) // self._stride
         return bytes((value >> shift) & 0xff for shift in self._shifts)
+
+
+    def constrain(self, candidate_map):
+        """Apply constraint implied by this pointer to the `candidate_map`.
+        It should be a defaultdict mapping names to CandidateSets."""
+        candidate_map[self._referent].constrain(self.gamut)
+        return self._referent
 
 
     def __repr__(self):
