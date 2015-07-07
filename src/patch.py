@@ -24,8 +24,7 @@ class Patch:
     specified as a sequence of either Datum objects (representing fixed byte
     sequences) or Pointer objects (whose value encodes the location of
     another Patch)."""
-    def __init__(self, name, components):
-        self._name = name
+    def __init__(self, components):
         self._components = components
 
 
@@ -43,15 +42,12 @@ class Patch:
                 to_process.add(result)
 
 
-    def write_into(self, rom, fit_map):
-        """Write the patch data to the `rom`, if it's part of the `fit_map`.
+    def write_into(self, rom, where, fit_map):
+        """Write the patch data to the `rom`.
         `rom` -> `bytearray` representing the entire file being written into.
+        `where` -> int location where this patch goes.
         `fit_map` -> map of (str: name of patch) -> (int: location to write).
-        The `fit_map` is also used by Pointers to compute their values."""
-        try:
-            where = fit_map[self._name]
-        except KeyError:
-            return
+        Used by Pointers to compute their values."""
         assert where >= 0
         # Ensure the rom is long enough that we can start writing at 'where'.
         # Multiplying a list by a negative value produces an empty list, so

@@ -58,13 +58,13 @@ def load(parsed_json, defaults):
     if not isinstance(parsed_json, dict):
         raise ValueError('data must be a JSON object with Patches as values')
     make_item = item_factory(defaults)
-    return {k: load_patch(make_item, k, v) for k, v in parsed_json.items()}
+    return {k: load_patch(make_item, v) for k, v in parsed_json.items()}
 
 
-def load_patch(item_loader, name, patch):
+def load_patch(item_loader, patch):
     if not isinstance(patch, list):
         raise ValueError('Patch must be a JSON array of Patch items')
-    return Patch(name, list(map(item_loader, patch)))
+    return Patch(list(map(item_loader, patch)))
 
 
 def get_json(filename):
