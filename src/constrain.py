@@ -4,6 +4,15 @@ from itertools import chain
 from pointer import range_intersect
 
 
+def range_exclude(r, low, high):
+    start, stop, step = r.start, r.stop, r.step
+    if low <= r.start < high:
+        start = high + (r.start - high) % r.step
+    if low <= r.stop < high:
+        stop = low
+    return range(start, stop, step)
+
+
 class CandidateSet:
     """Represents a set of locations where a given Patch might be written."""
     def __init__(self, freespace):
@@ -18,6 +27,10 @@ class CandidateSet:
         return chain.from_iterable(self._locations)
 
 
+    def __len__(self):
+        return sum(map(len, self._locations))
+
+
     def constrain(self, gamut):
         """Restrict the locations to ones found within the `gamut`."""
         self._set(range_intersect(x, gamut) for x in self._locations)
@@ -27,11 +40,7 @@ class CandidateSet:
         """Return a new CandidateSet based off this one, with no candidates
         in [`low`, `high`)."""
         return CandidateSet(
-            range(
-                high if low <= r.start < high else r.start,
-                low if low <= r.stop < high else r.stop,
-                r.step
-            ) for r in self._locations
+            range_exclude(r, low, high) for r in self._locations
         )
 
 
@@ -52,6 +61,38 @@ def make_candidate_map(patch_map, roots, freespace):
     return result
 
 
-def make_fit_map(candidate_map):
-    # FIXME
-    return {k: next(iter(v)) for k, v in candidate_map.items()}
+def freedom(item):
+    """Measure of how constrained an `item` in a candidate map is.
+    The most constrained items are fit first, in general."""
+    key, value = item
+    return len(value), key
+
+
+def make_fit_map_rec(patch_map, candidate_map, fits):
+    if not candidate_map:
+        return fits # reached end of recursion
+    name, candidate_set = min(candidate_map.items(), key=freedom)
+    for candidate in candidate_set:
+        recurse = make_fit_map_rec(
+            patch_map,
+            {
+                k: v.not_overlapping(
+                    candidate - len(patch_map[k]),
+                    candidate + len(patch_map[name])
+                )
+                for k, v in candidate_map.items()
+                if k != name
+            },
+            fits + ((name, candidate),)
+        )
+        if recurse is not None: # This candidate value works.
+            return recurse
+    # Found no solution; propagate None up the recursion.
+
+
+def make_fit_map(patch_map, roots, freespace):
+    candidate_map = make_candidate_map(patch_map, roots, freespace)
+    fits = make_fit_map_rec(patch_map, candidate_map, ())
+    if fits is not None:
+        fits = dict(fits)
+    return fits
