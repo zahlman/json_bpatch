@@ -7,7 +7,7 @@ class Datum:
         return len(self._raw)
 
 
-    def data(self, fit):
+    def data(self, fit_map):
         return self._raw
 
 
@@ -29,13 +29,13 @@ class Patch:
         return sum(len(component) for component in self._components)
 
 
-    def write_into(self, rom, fit):
-        """Write the patch data to the `rom`, if it's part of the `fit`.
+    def write_into(self, rom, fit_map):
+        """Write the patch data to the `rom`, if it's part of the `fit_map`.
         `rom` -> `bytearray` representing the entire file being written into.
-        `fit` -> map of (str: name of patch) -> (int: location to write).
-        The `fit` is also used by Pointers to compute their values."""
+        `fit_map` -> map of (str: name of patch) -> (int: location to write).
+        The `fit_map` is also used by Pointers to compute their values."""
         try:
-            where = fit[self._name]
+            where = fit_map[self._name]
         except KeyError:
             return
         assert where >= 0
@@ -45,7 +45,7 @@ class Patch:
         rom.extend([0] * (where - len(rom)))
         # Write the individual components.
         for component in self._components:
-            data = component.data(fit)
+            data = component.data(fit_map)
             end = where + len(data)
             # This works regardless of whether the write is in the middle,
             # overlapping the end or at the end. Because of the initial padding,

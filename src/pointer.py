@@ -28,10 +28,10 @@ class Pointer:
         return self._gamut
 
 
-    def data(self, fit):
-        """The bytes used by this pointer, given the specified fit map.
+    def data(self, fit_map):
+        """The bytes used by this pointer, given the specified fit_map map.
         The referent of this pointer must be mentioned in the map."""
-        address = fit[self._referent]
+        address = fit_map[self._referent]
         if not self._gamut.start <= address < self._gamut.stop:
             raise ValueError("Address out of bounds")
         if address not in self._gamut:
