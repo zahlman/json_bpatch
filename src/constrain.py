@@ -1,5 +1,6 @@
 from collections import defaultdict
 from functools import partial
+from itertools import chain
 from pointer import range_intersect
 
 
@@ -11,6 +12,10 @@ class CandidateSet:
 
     def _set(self, freespace):
         self._locations = list(filter(None, freespace))
+
+
+    def __iter__(self):
+        return chain.from_iterable(self._locations)
 
 
     def constrain(self, gamut):
@@ -45,3 +50,8 @@ def make_candidate_map(patch_map, roots, freespace):
         patch_map[p].constrain(result, processed, to_process)
         processed.add(p)
     return result
+
+
+def make_fit_map(candidate_map):
+    # FIXME
+    return {k: next(iter(v)) for k, v in candidate_map.items()}
