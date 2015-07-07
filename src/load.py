@@ -1,3 +1,4 @@
+from base64 import b64decode
 from collections import ChainMap
 from functools import partial
 import json
@@ -31,9 +32,22 @@ def make_pointer(defaults, settings):
     return Pointer(referent, offset, size, align, stride, signed, bigendian)
 
 
+def make_datum(s):
+    if s.startswith('@'):
+        filename = s[1:]
+        with open(filename, 'rb') as f:
+            data = f.read()
+    elif s.startswith('='):
+        data = b64decode(s) # the '=' will be handled automatically.
+    else:
+        # hex dump; expect a space after every digit pair.
+        data = bytes(int(_, 16) for _ in s.split())
+    return Datum(data)
+
+
 def make_item_with_defaults(defaults, data):
     if isinstance(data, str):
-        return Datum(bytes(data, 'ascii')) # temporary!
+        return make_datum(data)
     elif isinstance(data, dict):
         return make_pointer(defaults, data)
     else:
