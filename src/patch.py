@@ -11,6 +11,13 @@ class Datum:
         return self._raw
 
 
+    def __str__(self):
+        return '<Datum: "{}">'.format(self._raw)
+
+
+    __repr__ = __str__
+
+
 class Patch:
     """Represents a contiguous chunk of data to be written by the patcher,
     specified as a sequence of either Datum objects (representing fixed byte
@@ -50,3 +57,9 @@ class Patch:
             rom[where:end] = data
             where = end
 
+
+    def __str__(self):
+        return '<Patch: {}>'.format(self._components)
+
+
+    __repr__ = __str__
