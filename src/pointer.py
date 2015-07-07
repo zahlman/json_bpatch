@@ -1,23 +1,5 @@
 class Pointer:
     def __init__(self, offset, size, align, stride, signed, bigendian):
-        # Note deliberately strict, 'unpythonic' type-checking here.
-        # Want to make sure that the input JSON doesn't do anything strange.
-        for name, param in (
-            ('offset', offset),
-            ('size', size),
-            ('align', align),
-            ('stride', stride)
-        ):
-            if type(param) != int:
-                raise TypeError('{} must be an integer'.format(name))
-        for name, param in (('signed', signed), ('bigendian', bigendian)):
-            if type(param) != bool:
-                raise TypeError('{} must be boolean'.format(name))
-        if size < 0:
-            raise ValueError('size cannot be negative')
-        if align < 1 or (align & (align - 1)):
-            raise ValueError('align must be a power of two')
-
         self._offset = offset
         self._mask = align - 1
         bits = size * 8 
