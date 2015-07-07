@@ -40,11 +40,8 @@ class Pointer:
         return bytes((value >> shift) & 0xff for shift in self._shifts)
 
 
-    def __str__(self):
+    def __repr__(self):
         return '<Pointer to "{}", in {}>'.format(self._referent, self.gamut)
-
-
-    __repr__ = __str__
 
 
 def gcd(x, y):

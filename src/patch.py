@@ -11,11 +11,8 @@ class Datum:
         return self._raw
 
 
-    def __str__(self):
+    def __repr__(self):
         return '<Datum: "{}">'.format(self._raw)
-
-
-    __repr__ = __str__
 
 
 class Patch:
@@ -58,8 +55,5 @@ class Patch:
             where = end
 
 
-    def __str__(self):
+    def __repr__(self):
         return '<Patch: {}>'.format(self._components)
-
-
-    __repr__ = __str__
