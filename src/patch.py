@@ -33,11 +33,14 @@ class Patch:
         return sum(len(component) for component in self._components)
 
 
-    def constrain(self, candidate_map):
+    def constrain(self, candidate_map, processed, to_process):
+        """Iterate over components and have each apply its constraints
+        to the `candidate_map`. As a side effect, update the "open" set
+        for the transitive cover operation."""
         for component in self._components:
             result = component.constrain(candidate_map)
-            if result is not None:
-                yield result
+            if result not in processed:
+                to_process.add(result)
 
 
     def write_into(self, rom, fit_map):

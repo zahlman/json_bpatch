@@ -1,4 +1,4 @@
-from collections import defaultdict, deque
+from collections import defaultdict
 from functools import partial
 from pointer import range_intersect
 
@@ -35,12 +35,13 @@ class CandidateSet:
 
 
 def make_candidate_map(patch_map, roots, freespace):
-    processed = set()
+    # Elegant hack: Datum objects will identify their "referent" as None,
+    # so exclude that from consideration right away.
+    processed = {None} 
     to_process = set(roots)
     result = defaultdict(partial(CandidateSet, freespace))
     while to_process:
         p = to_process.pop()
-        if p in processed: continue
-        to_process.update(patch_map[p].constrain(result))
+        patch_map[p].constrain(result, processed, to_process)
         processed.add(p)
     return result
