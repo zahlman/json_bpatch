@@ -1,4 +1,3 @@
-from collections import defaultdict
 from functools import partial
 from itertools import chain
 from pointer import range_intersect
@@ -15,8 +14,10 @@ def range_exclude(r, low, high):
 
 class CandidateSet:
     """Represents a set of locations where a given Patch might be written."""
-    def __init__(self, freespace):
-        self._set(freespace)
+    def __init__(self, freespace, trim=0):
+        self._set(
+            range(r.start, r.stop - trim, r.step) for r in freespace
+        )
 
 
     def _set(self, freespace):
@@ -49,15 +50,25 @@ class CandidateSet:
 
 
 def make_candidate_map(patch_map, roots, freespace):
+    """Produce a map from patch names to "candidate" locations for fitting,
+    constrained by the initial freespace allocation, the patch size and
+    pointer-based constraints."""
     # Elegant hack: Datum objects will identify their "referent" as None,
     # so exclude that from consideration right away.
     processed = {None} 
     to_process = set(roots)
-    result = defaultdict(partial(CandidateSet, freespace))
+    # Set up the initial constraints based on freespace and patch sizes.
+    result = {
+        name: CandidateSet(freespace, max(0, len(patch) - 1))
+        for name, patch in patch_map.items()
+    }
+    # Iteratively apply constraints from "discovered" pointers.
     while to_process:
         p = to_process.pop()
         patch_map[p].constrain(result, processed, to_process)
         processed.add(p)
+    # Remove any result entries for nodes that were not reached.
+    result = {k: v for k, v in result.items() if k in processed}
     return result
 
 
