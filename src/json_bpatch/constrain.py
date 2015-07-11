@@ -76,24 +76,36 @@ class Freespace:
                 # Special case: zero-length patch items can go anywhere.
                 yield range(0, 1)
             else:
-                yield range_intersect(
-                    range(r.start, r.stop - size + 1),
-                    pointer_gamut
-                )
+                chunk = range(r.start, r.stop - size + 1)
+                if pointer_gamut is not None:
+                    chunk = range_intersect(chunk, pointer_gamut)
+                yield chunk
 
 
     def candidates(self, size, pointer_gamut):
-        """Iterator over places where a patch item of the specified `size`
+        """Iterable of places where a patch item of the specified `size`
         could be written in this Freespace, subject to the `pointer_gamut`."""
-        candidate_ranges = deque(
-            map(iter, self._candidate_ranges(size, pointer_gamut))
-        )
+        return Candidates(tuple(self._candidate_ranges(size, pointer_gamut)))
+
+
+class Candidates:
+    # FIXME this should replace CandidateSet eventually, more or less.
+    def __init__(self, ranges):
+        self._ranges = ranges
+
+
+    def __iter__(self):
+        candidate_ranges = deque(map(iter, self._ranges))
         while candidate_ranges:
             try:
                 yield next(candidate_ranges[0])
             except StopIteration:
                 candidate_ranges.popleft() # Exhausted options in this chunk.
             candidate_ranges.rotate(-1) # Try a candidate from the next chunk.
+
+
+    def __len__(self):
+        return sum(map(len, self._ranges))
 
 
 def range_exclude(r, low, high):
@@ -105,41 +117,50 @@ def range_exclude(r, low, high):
     return range(start, stop, step)
 
 
+def make_freespace(ranges):
+    # FIXME This should happen directly from the loading process.
+    result = Freespace()
+    for r in ranges:
+        result.add(r.start, r.stop - r.start)
+    return result
+
+
 class CandidateSet:
     """Represents a set of locations where a given Patch might be written."""
-    def __init__(self, freespace, trim=0):
-        self._set(
-            range(r.start, r.stop - trim, r.step) for r in freespace
-        )
+    def __init__(self, freespace, size, gamut=None):
+        self._freespace = freespace
+        self._size = size
+        self._gamut = gamut
 
 
-    def _set(self, freespace):
-        self._locations = list(filter(None, freespace))
+    def _candidates(self):
+        return self._freespace.candidates(self._size, self._gamut)
 
 
     def __iter__(self):
-        return chain.from_iterable(self._locations)
+        return iter(self._candidates())
 
 
     def __len__(self):
-        return sum(map(len, self._locations))
+        return len(self._candidates())
 
 
     def constrain(self, gamut):
         """Restrict the locations to ones found within the `gamut`."""
-        self._set(range_intersect(x, gamut) for x in self._locations)
+        if self._gamut is None:
+            self._gamut = gamut
+        else:
+            self._gamut = range_intersect(self._gamut, gamut)
 
 
-    def not_overlapping(self, low, high):
+    def not_overlapping(self, start, size):
         """Return a new CandidateSet based off this one, with no candidates
         in [`low`, `high`)."""
-        return CandidateSet(
-            range_exclude(r, low, high) for r in self._locations
-        )
+        return CandidateSet(self._freespace.excluding(start, size), self._size, self._gamut)
 
 
     def __repr__(self):
-        return repr(self._locations)
+        return '<CandidateSet: {}>'.format(list(self._candidates())[:10]) 
 
 
 def make_candidate_map(patch_map, roots, freespace):
@@ -151,8 +172,9 @@ def make_candidate_map(patch_map, roots, freespace):
     processed = {None}
     to_process = set(roots)
     # Set up the initial constraints based on freespace and patch sizes.
+    freespace = make_freespace(freespace)
     result = {
-        name: CandidateSet(freespace, max(0, len(patch) - 1))
+        name: CandidateSet(freespace, len(patch))
         for name, patch in patch_map.items()
     }
     # Iteratively apply constraints from "discovered" pointers.
@@ -180,10 +202,7 @@ def make_fit_map_rec(patch_map, candidate_map, fits):
         recurse = make_fit_map_rec(
             patch_map,
             {
-                k: v.not_overlapping(
-                    candidate - len(patch_map[k]),
-                    candidate + len(patch_map[name])
-                )
+                k: v.not_overlapping(candidate, len(patch_map[name]))
                 for k, v in candidate_map.items()
                 if k != name
             },
