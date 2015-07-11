@@ -40,11 +40,14 @@ class Pointer:
         return bytes((value >> shift) & 0xff for shift in self._shifts)
 
 
-    def constrain(self, candidate_map):
-        """Apply constraint implied by this pointer to the `candidate_map`.
-        It should be a defaultdict mapping names to CandidateSets."""
-        candidate_map[self._referent].constrain(self.gamut)
-        return self._referent
+    def constrain(self, gamut_map, processed, to_process):
+        """Apply constraint implied by this pointer to the `gamut_map`."""
+        gamut_map[self._referent] = range_intersect(
+            gamut_map.get(self._referent, None),
+            self.gamut
+        )
+        if self._referent not in processed:
+            to_process.add(self._referent)
 
 
     def __repr__(self):

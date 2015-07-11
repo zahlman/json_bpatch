@@ -11,7 +11,7 @@ class Datum:
         return self._raw
 
 
-    def constrain(self, candidate_map):
+    def constrain(self, candidate_map, processed, to_process):
         pass
 
 
@@ -37,9 +37,7 @@ class Patch:
         to the `candidate_map`. As a side effect, update the "open" set
         for the transitive cover operation."""
         for component in self._components:
-            result = component.constrain(candidate_map)
-            if result not in processed:
-                to_process.add(result)
+            component.constrain(candidate_map, processed, to_process)
 
 
     def write_into(self, to_patch, where, fit_map):

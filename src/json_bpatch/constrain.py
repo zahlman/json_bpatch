@@ -150,27 +150,22 @@ class CandidateSet:
         return '<CandidateSet: {}>'.format(list(self._candidates())[:10]) 
 
 
-def make_candidate_map(patch_map, roots, freespace):
-    """Produce a map from patch names to "candidate" locations for fitting,
-    constrained by the initial freespace allocation, the patch size and
-    pointer-based constraints."""
-    # Elegant hack: Datum objects will identify their "referent" as None,
-    # so exclude that from consideration right away.
-    processed = {None}
+def make_gamut_map(patch_map, roots):
+    """Produce a map from patch items that will be included in patching,
+    to the pointer constraints placed upon their patch locations.
+
+    `roots` -> names of patches whose inclusion should be forced.
+    Other patches will be transitively included as required by pointers.
+    """
+    processed = set()
     to_process = set(roots)
-    # Set up the initial constraints based on freespace and patch sizes.
-    freespace = make_freespace(freespace)
-    result = {
-        name: CandidateSet(freespace, len(patch))
-        for name, patch in patch_map.items()
-    }
+    # Ensure that the roots appear in the result.
+    result = {r: None for r in to_process}
     # Iteratively apply constraints from "discovered" pointers.
     while to_process:
         p = to_process.pop()
         patch_map[p].constrain(result, processed, to_process)
         processed.add(p)
-    # Remove any result entries for nodes that were not reached.
-    result = {k: v for k, v in result.items() if k in processed}
     return result
 
 
@@ -181,19 +176,25 @@ def freedom(item):
     return len(value), key
 
 
-def make_fit_map_rec(patch_map, candidate_map, fits):
-    if not candidate_map:
+def make_fit_map_rec(patch_map, gamut_map, freespace, fits, unfitted):
+    if not unfitted:
         return fits # reached end of recursion
-    name, candidate_set = min(candidate_map.items(), key=freedom)
-    for candidate in candidate_set:
+
+    # Recompute candidates for each unfitted item, and select the
+    # most constrained.
+    candidate_mapping = {
+        name: freespace.candidates(len(patch_map[name]), gamut_map[name])
+        for name in unfitted
+    }
+    name = min(unfitted, key=lambda n: (len(candidate_mapping[n]), n))
+
+    for candidate in candidate_mapping[name]:
         recurse = make_fit_map_rec(
             patch_map,
-            {
-                k: v.not_overlapping(candidate, len(patch_map[name]))
-                for k, v in candidate_map.items()
-                if k != name
-            },
-            fits + ((name, candidate),)
+            gamut_map,
+            freespace.excluding(candidate, len(patch_map[name])),
+            fits + ((name, candidate),),
+            tuple(x for x in unfitted if x != name)
         )
         if recurse is not None: # This candidate value works.
             return recurse
@@ -201,8 +202,14 @@ def make_fit_map_rec(patch_map, candidate_map, fits):
 
 
 def make_fit_map(patch_map, roots, freespace):
-    candidate_map = make_candidate_map(patch_map, roots, freespace)
-    fits = make_fit_map_rec(patch_map, candidate_map, ())
+    gamut_map = make_gamut_map(patch_map, roots)
+    fits = make_fit_map_rec(
+        patch_map,
+        gamut_map,
+        make_freespace(freespace),
+        (),
+        gamut_map.keys()
+    )
     if fits is not None:
         fits = dict(fits)
     return fits
