@@ -8,6 +8,11 @@ class Freespace:
         self._ranges = []
 
 
+    @property
+    def data(self):
+        return [[r.start, r.stop] for r in self._ranges]
+
+
     def _ranges_with(self, start, size):
         merged_start = start
         merged_stop = start + size
@@ -97,7 +102,8 @@ class Candidates:
                 yield next(candidate_ranges[0])
             except StopIteration:
                 candidate_ranges.popleft() # Exhausted options in this chunk.
-            candidate_ranges.rotate(-1) # Try a candidate from the next chunk.
+            else:
+                candidate_ranges.rotate(-1) # Move to the next chunk.
 
 
     def __len__(self):
