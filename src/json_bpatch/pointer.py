@@ -63,8 +63,12 @@ def gcd(x, y):
 def range_intersect(x, y):
     """Compute a range containing values only seen in both input range objects.
     The result range may be empty. Step values must be positive."""
-    if x.start > y.start: # Normalize.
-        x, y = y, x
+
+    # First, some normalization. We treat `None` as equivalent to a range from
+    # -infinity to +infinity with a step of 1.
+    if x is None: return y
+    if y is None: return x
+    if x.start > y.start: x, y = y, x
 
     stop = min(x.stop, y.stop)
     # Check that the start points are congruent modulo the gcd of strides.

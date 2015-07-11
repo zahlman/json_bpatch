@@ -76,10 +76,9 @@ class Freespace:
                 # Special case: zero-length patch items can go anywhere.
                 yield range(0, 1)
             else:
-                chunk = range(r.start, r.stop - size + 1)
-                if pointer_gamut is not None:
-                    chunk = range_intersect(chunk, pointer_gamut)
-                yield chunk
+                yield range_intersect(
+                    range(r.start, r.stop - size + 1), pointer_gamut
+                )
 
 
     def candidates(self, size, pointer_gamut):
@@ -106,15 +105,6 @@ class Candidates:
 
     def __len__(self):
         return sum(map(len, self._ranges))
-
-
-def range_exclude(r, low, high):
-    start, stop, step = r.start, r.stop, r.step
-    if low <= r.start < high:
-        start = high + (r.start - high) % r.step
-    if low <= r.stop < high:
-        stop = low
-    return range(start, stop, step)
 
 
 def make_freespace(ranges):
@@ -147,10 +137,7 @@ class CandidateSet:
 
     def constrain(self, gamut):
         """Restrict the locations to ones found within the `gamut`."""
-        if self._gamut is None:
-            self._gamut = gamut
-        else:
-            self._gamut = range_intersect(self._gamut, gamut)
+        self._gamut = range_intersect(self._gamut, gamut)
 
 
     def not_overlapping(self, start, size):
