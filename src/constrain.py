@@ -55,7 +55,7 @@ def make_candidate_map(patch_map, roots, freespace):
     pointer-based constraints."""
     # Elegant hack: Datum objects will identify their "referent" as None,
     # so exclude that from consideration right away.
-    processed = {None} 
+    processed = {None}
     to_process = set(roots)
     # Set up the initial constraints based on freespace and patch sizes.
     result = {

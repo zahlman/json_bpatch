@@ -3,7 +3,7 @@ class Pointer:
         self._referent = ref
         self._offset = offset
         self._mask = align - 1
-        bits = size * 8 
+        bits = size * 8
         low = -((1 << bits) >> 1) if signed else 0
         high = 0 if size == 0 else ((1 << bits) - 1 + low)
         self._gamut = range(
