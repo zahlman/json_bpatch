@@ -88,7 +88,6 @@ class Freespace:
 
 
 class Candidates:
-    # FIXME this should replace CandidateSet eventually, more or less.
     def __init__(self, ranges):
         self._ranges = ranges
 
@@ -115,41 +114,6 @@ def make_freespace(ranges):
     return result
 
 
-class CandidateSet:
-    """Represents a set of locations where a given Patch might be written."""
-    def __init__(self, freespace, size, gamut=None):
-        self._freespace = freespace
-        self._size = size
-        self._gamut = gamut
-
-
-    def _candidates(self):
-        return self._freespace.candidates(self._size, self._gamut)
-
-
-    def __iter__(self):
-        return iter(self._candidates())
-
-
-    def __len__(self):
-        return len(self._candidates())
-
-
-    def constrain(self, gamut):
-        """Restrict the locations to ones found within the `gamut`."""
-        self._gamut = range_intersect(self._gamut, gamut)
-
-
-    def not_overlapping(self, start, size):
-        """Return a new CandidateSet based off this one, with no candidates
-        in [`low`, `high`)."""
-        return CandidateSet(self._freespace.excluding(start, size), self._size, self._gamut)
-
-
-    def __repr__(self):
-        return '<CandidateSet: {}>'.format(list(self._candidates())[:10]) 
-
-
 def make_gamut_map(patch_map, roots):
     """Produce a map from patch items that will be included in patching,
     to the pointer constraints placed upon their patch locations.
@@ -167,13 +131,6 @@ def make_gamut_map(patch_map, roots):
         patch_map[p].constrain(result, processed, to_process)
         processed.add(p)
     return result
-
-
-def freedom(item):
-    """Measure of how constrained an `item` in a candidate map is.
-    The most constrained items are fit first, in general."""
-    key, value = item
-    return len(value), key
 
 
 def make_fit_map_rec(patch_map, gamut_map, freespace, fits, unfitted):
