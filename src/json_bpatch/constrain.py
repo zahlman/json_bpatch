@@ -1,3 +1,4 @@
+from collections import deque
 from functools import partial
 from itertools import chain
 from .pointer import range_intersect
@@ -67,6 +68,32 @@ class Freespace:
 
     def remove(self, start, size):
         self._ranges = list(self._ranges_without(start, size))
+
+
+    def _candidate_ranges(self, size, pointer_gamut):
+        for r in self._ranges:
+            if size == 0:
+                # Special case: zero-length patch items can go anywhere.
+                yield range(0, 1)
+            else:
+                yield range_intersect(
+                    range(r.start, r.stop - size + 1),
+                    pointer_gamut
+                )
+
+
+    def candidates(self, size, pointer_gamut):
+        """Iterator over places where a patch item of the specified `size`
+        could be written in this Freespace, subject to the `pointer_gamut`."""
+        candidate_ranges = deque(
+            map(iter, self._candidate_ranges(size, pointer_gamut))
+        )
+        while candidate_ranges:
+            try:
+                yield next(candidate_ranges[0])
+            except StopIteration:
+                candidate_ranges.popleft() # Exhausted options in this chunk.
+            candidate_ranges.rotate(-1) # Try a candidate from the next chunk.
 
 
 def range_exclude(r, low, high):
