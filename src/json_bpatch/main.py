@@ -2,9 +2,9 @@ from base64 import b64decode
 from collections import ChainMap
 from functools import partial
 import json
-from .constrain import Freespace, make_fit_map
-from .patch import Datum, Patch
-from .pointer import Pointer
+from .constrain import make_fit_map
+from .freespace import Freespace
+from .patch import Datum, Patch, Pointer
 
 
 def get_param(params, expected_type, name):

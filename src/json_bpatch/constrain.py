@@ -1,107 +1,37 @@
-from collections import deque
-from .pointer import range_intersect
+def gcd(x, y):
+    """Iterative implementation of Euclid's algorithm."""
+    if x < y:
+        x, y = y, x
+    while x > y and y != 0:
+        x, y = y, x % y
+    return x
 
 
-class Freespace:
-    """Represents a set of "free" locations in the file to be patched."""
-    def __init__(self):
-        self._ranges = []
+def range_intersect(x, y):
+    """Compute a range containing values only seen in both input range objects.
+    The result range may be empty. Step values must be positive."""
 
+    # First, some normalization. We treat `None` as equivalent to a range from
+    # -infinity to +infinity with a step of 1.
+    if x is None: return y
+    if y is None: return x
+    if x.start > y.start: x, y = y, x
 
-    def _ranges_with(self, start, size):
-        merged_start = start
-        merged_stop = start + size
-        merged_written = False
-        for r in self._ranges:
-            if r.stop < merged_start:
-                # Completely before the inserted range.
-                yield r
-            elif r.start > merged_stop:
-                # Completely after the inserted range.
-                # Ensure that the merged chunk is written first.
-                if not merged_written:
-                    yield range(merged_start, merged_stop)
-                merged_written = True
-                yield r
-            else:
-                # Overlaps; do merging.
-                merged_start = min(merged_start, r.start)
-                merged_stop = max(merged_stop, r.stop)
-        # Ensure merged chunk is written if there's nothing after it.
-        if not merged_written:
-            yield range(merged_start, merged_stop)
-
-
-    def including(self, start, size):
-        result = Freespace()
-        result._ranges = list(self._ranges_with(start, size))
-        return result
-
-
-    def add(self, start, size):
-        self._ranges = list(self._ranges_with(start, size))
-
-
-    def _ranges_without(self, start, size):
-        removed_start = start
-        removed_stop = start + size
-        for r in self._ranges:
-            if r.stop <= removed_start or r.start >= removed_stop:
-                # No overlap.
-                yield r
-            else:
-                # Do the appropriate clipping.
-                # May produce 0-2 clips.
-                if r.start < removed_start:
-                    yield range(r.start, removed_start)
-                if r.stop > removed_stop:
-                    yield range(removed_stop, r.stop)
-
-
-    def excluding(self, start, size):
-        result = Freespace()
-        result._ranges = list(self._ranges_without(start, size))
-        return result
-
-
-    def remove(self, start, size):
-        self._ranges = list(self._ranges_without(start, size))
-
-
-    def _candidate_ranges(self, size, pointer_gamut):
-        for r in self._ranges:
-            if size == 0:
-                # Special case: zero-length patch items can go anywhere.
-                yield range(0, 1)
-            else:
-                yield range_intersect(
-                    range(r.start, r.stop - size + 1), pointer_gamut
-                )
-
-
-    def candidates(self, size, pointer_gamut):
-        """Iterable of places where a patch item of the specified `size`
-        could be written in this Freespace, subject to the `pointer_gamut`."""
-        return Candidates(tuple(self._candidate_ranges(size, pointer_gamut)))
-
-
-class Candidates:
-    def __init__(self, ranges):
-        self._ranges = ranges
-
-
-    def __iter__(self):
-        candidate_ranges = deque(map(iter, self._ranges))
-        while candidate_ranges:
-            try:
-                yield next(candidate_ranges[0])
-            except StopIteration:
-                candidate_ranges.popleft() # Exhausted options in this chunk.
-            candidate_ranges.rotate(-1) # Try a candidate from the next chunk.
-
-
-    def __len__(self):
-        return sum(map(len, self._ranges))
+    stop = min(x.stop, y.stop)
+    # Check that the start points are congruent modulo the gcd of strides.
+    stride_gcd = gcd(x.step, y.step)
+    step = x.step * y.step // stride_gcd # lcm
+    start = stop # default result: empty range
+    if x.start % stride_gcd == y.start % stride_gcd:
+        # The sequences line up eventually; check values from y until we find
+        # one that's in x, or exceed the stopping point.
+        # There doesn't seem to be a neater approach; in the worst case, this
+        # is apparently equivalent to decrypting RSA.
+        try:
+            start = next(v for v in range(y.start, stop, y.step) if v in x)
+        except StopIteration:
+            pass # couldn't find a start point.
+    return range(start, stop, step)
 
 
 def make_gamut_map(patch_map, roots):
