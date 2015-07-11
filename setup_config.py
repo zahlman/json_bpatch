@@ -1,4 +1,4 @@
-project_name = 'Pointer'
+project_name = 'json_bpatch'
 
 # The version number.
 version = (0, 0, 1)
@@ -24,7 +24,7 @@ license_long = ('OSI Approved', 'MIT License')
 development_status = 'planning'
 
 # What versions of Python are supported.
-supported_versions = ['3.2', '3.3', '3.4']
+supported_versions = ['3.4']
 
 # What does your project relate to?
 keywords = ''
@@ -34,7 +34,11 @@ keywords = ''
 # For each classifier, specify a sequence of items to join with ' :: ';
 # or use nested sequences to group multiple classifiers (see the documentation
 # for setup.make_classifiers).
-additional_classifiers = ()
+additional_classifiers = (
+    ('Environment', 'Console'),
+    ('Intended Audience', 'Developers'),
+    ('Topic', ('Software Development', 'Embedded Systems'), 'Utilities')
+)
 
 # List run-time dependencies here. These will be installed by pip when the
 # project is installed.
@@ -59,7 +63,7 @@ author_email = 'zahlman@gmail.com'
 
 # Modify this if your Github user ID changes or if you aren't hosting the
 # project on Github.
-url = 'https://github.com/zahlman/Pointer'
+url = 'https://github.com/zahlman/json_bpatch'
 
 # Any other setuptools options you need to provide (or explicitly override
 # for some reason).
@@ -68,4 +72,4 @@ extra_options = { }
 # Additional instructions for the MANIFEST.in file, after including every
 # file found in the git repository. (You might use this, for example, to
 # exclude tests from distribution.)
-extra_manifest = ['prune *tests*']
+extra_manifest = []
