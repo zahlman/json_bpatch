@@ -2,7 +2,7 @@ from base64 import b64decode
 from collections import ChainMap
 from functools import partial
 import json
-from .constrain import make_fit_map
+from .constrain import Freespace, make_fit_map
 from .patch import Datum, Patch
 from .pointer import Pointer
 
@@ -92,18 +92,18 @@ def load_files(patch_file, defaults_file):
 
 
 def save(to_patch, patch_map, fit_map):
-    for name, patch in patch_map.items():
-        if name in fit_map:
-            print(
-                "Writing: {} in [{}:{}]".format(
-                    name, fit_map[name], fit_map[name] + len(patch_map[name])
-                )
-            )
-            patch.write_into(to_patch, fit_map[name], fit_map)
+    for name, where in fit_map.items():
+        what = patch_map[name]
+        print(
+            "Writing: {} in [{}:{}]".format(name, where, where + len(what))
+        )
+        what.write_into(to_patch, where, fit_map)
 
 
 def write_patch(to_patch, patch_file, defaults_file, free_file, roots=None):
-    freespace = [range(x, y) for x, y in get_json(free_file)]
+    freespace = Freespace()
+    for start, end in get_json(free_file):
+        freespace.add(start, end - start)
     patch_map = load_files(patch_file, defaults_file)
     if roots is None:
         roots = [x for x in patch_map.keys() if x.startswith('_')]

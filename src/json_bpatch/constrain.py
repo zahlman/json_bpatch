@@ -106,14 +106,6 @@ class Candidates:
         return sum(map(len, self._ranges))
 
 
-def make_freespace(ranges):
-    # FIXME This should happen directly from the loading process.
-    result = Freespace()
-    for r in ranges:
-        result.add(r.start, r.stop - r.start)
-    return result
-
-
 def make_gamut_map(patch_map, roots):
     """Produce a map from patch items that will be included in patching,
     to the pointer constraints placed upon their patch locations.
@@ -161,11 +153,7 @@ def make_fit_map_rec(patch_map, gamut_map, freespace, fits, unfitted):
 def make_fit_map(patch_map, roots, freespace):
     gamut_map = make_gamut_map(patch_map, roots)
     fits = make_fit_map_rec(
-        patch_map,
-        gamut_map,
-        make_freespace(freespace),
-        (),
-        gamut_map.keys()
+        patch_map, gamut_map, freespace, (), gamut_map.keys()
     )
     if fits is not None:
         fits = dict(fits)
