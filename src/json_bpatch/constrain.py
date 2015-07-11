@@ -1,6 +1,6 @@
 from functools import partial
 from itertools import chain
-from pointer import range_intersect
+from .pointer import range_intersect
 
 
 def range_exclude(r, low, high):
