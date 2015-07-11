@@ -2,8 +2,6 @@ from base64 import b64decode
 from collections import ChainMap
 from functools import partial
 import json
-from .constrain import make_fit_map
-from .freespace import Freespace
 from .patch import Datum, Patch, Pointer
 
 
@@ -69,17 +67,17 @@ def item_factory(defaults):
     })
 
 
+def load_patch_item(item_loader, patch):
+    if not isinstance(patch, list):
+        raise ValueError('Patch must be a JSON array of Patch items')
+    return Patch(list(map(item_loader, patch)))
+
+
 def load(parsed_json, defaults):
     if not isinstance(parsed_json, dict):
         raise ValueError('data must be a JSON object with Patches as values')
     make_item = item_factory(defaults)
-    return {k: load_patch(make_item, v) for k, v in parsed_json.items()}
-
-
-def load_patch(item_loader, patch):
-    if not isinstance(patch, list):
-        raise ValueError('Patch must be a JSON array of Patch items')
-    return Patch(list(map(item_loader, patch)))
+    return {k: load_patch_item(make_item, v) for k, v in parsed_json.items()}
 
 
 def get_json(filename):
@@ -87,38 +85,8 @@ def get_json(filename):
         return json.load(f)
 
 
-def load_files(patch_file, defaults_file):
-    return load(get_json(patch_file), get_json(defaults_file))
-
-
-def save(to_patch, patch_map, fit_map):
-    for name, where in fit_map.items():
-        what = patch_map[name]
-        print(
-            "Writing: {} in [{}:{}]".format(name, where, where + len(what))
-        )
-        what.write_into(to_patch, where, fit_map)
-
-
-def write_patch(to_patch, patch_file, defaults_file, free_file, roots=None):
-    freespace = Freespace()
-    for start, end in get_json(free_file):
-        freespace.add(start, end - start)
-    patch_map = load_files(patch_file, defaults_file)
-    if roots is None:
-        roots = [x for x in patch_map.keys() if x.startswith('_')]
-    fit_map = make_fit_map(patch_map, roots, freespace)
-    if fit_map is None:
-        raise ValueError("Fitting failed.")
-    else:
-        save(to_patch, patch_map, fit_map)
-
-
-def do_patching(
-    in_file, out_file, patch_file, defaults_file, free_file, roots=None
-):
-    with open(in_file, 'rb') as f:
-        data = bytearray(f.read())
-    write_patch(data, patch_file, defaults_file, free_file, roots)
-    with open(out_file, 'wb') as f:
-        f.write(data)
+def load_patch_file(patch_file, defaults_file):
+    return load(
+        get_json(patch_file),
+        {} if defaults_file is None else get_json(defaults_file)
+    )
