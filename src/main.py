@@ -2,6 +2,7 @@ from base64 import b64decode
 from collections import ChainMap
 from functools import partial
 import json
+from constrain import make_fit_map
 from patch import Datum, Patch
 from pointer import Pointer
 
@@ -88,3 +89,36 @@ def get_json(filename):
 
 def load_files(patch_file, defaults_file):
     return load(get_json(patch_file), get_json(defaults_file))
+
+
+def save(to_patch, patch_map, fit_map):
+    for name, patch in patch_map.items():
+        if name in fit_map:
+            print(
+                "Writing: {} in [{}:{}]".format(
+                    name, fit_map[name], fit_map[name] + len(patch_map[name])
+                )
+            )
+            patch.write_into(to_patch, fit_map[name], fit_map)
+
+
+def write_patch(to_patch, patch_file, defaults_file, free_file, roots=None):
+    freespace = [range(x, y) for x, y in get_json(free_file)]
+    patch_map = load_files(patch_file, defaults_file)
+    if roots is None:
+        roots = [x for x in patch_map.keys() if x.startswith('_')]
+    fit_map = make_fit_map(patch_map, roots, freespace)
+    if fit_map is None:
+        raise ValueError("Fitting failed.")
+    else:
+        save(to_patch, patch_map, fit_map)
+
+
+def do_patching(
+    in_file, out_file, patch_file, defaults_file, free_file, roots=None
+):
+    with open(in_file, 'rb') as f:
+        data = bytearray(f.read())
+    write_patch(data, patch_file, defaults_file, free_file, roots)
+    with open(out_file, 'wb') as f:
+        f.write(data)
