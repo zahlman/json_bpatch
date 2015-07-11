@@ -1,6 +1,4 @@
 from collections import deque
-from functools import partial
-from itertools import chain
 from .pointer import range_intersect
 
 
