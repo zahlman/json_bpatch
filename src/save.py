@@ -1,7 +1,7 @@
 import load, constrain
 
 
-def save(rom, patch_map, fit_map):
+def save(to_patch, patch_map, fit_map):
     for name, patch in patch_map.items():
         if name in fit_map:
             print(
@@ -9,10 +9,10 @@ def save(rom, patch_map, fit_map):
                     name, fit_map[name], fit_map[name] + len(patch_map[name])
                 )
             )
-            patch.write_into(rom, fit_map[name], fit_map)
+            patch.write_into(to_patch, fit_map[name], fit_map)
 
 
-def write_patch(rom, patch_file, defaults_file, free_file, roots=None):
+def write_patch(to_patch, patch_file, defaults_file, free_file, roots=None):
     freespace = [range(x, y) for x, y in load.get_json(free_file)]
     patch_map = load.load_files(patch_file, defaults_file)
     if roots is None:
@@ -21,4 +21,4 @@ def write_patch(rom, patch_file, defaults_file, free_file, roots=None):
     if fit_map is None:
         raise ValueError("Fitting failed.")
     else:
-        save(rom, patch_map, fit_map)
+        save(to_patch, patch_map, fit_map)

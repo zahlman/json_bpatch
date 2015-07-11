@@ -42,17 +42,17 @@ class Patch:
                 to_process.add(result)
 
 
-    def write_into(self, rom, where, fit_map):
-        """Write the patch data to the `rom`.
-        `rom` -> `bytearray` representing the entire file being written into.
+    def write_into(self, to_patch, where, fit_map):
+        """Write the data represented by this Patch, into `to_patch`.
+        `to_patch` -> `bytearray` representing the entire file being patched.
         `where` -> int location where this patch goes.
         `fit_map` -> map of (str: name of patch) -> (int: location to write).
         Used by Pointers to compute their values."""
         assert where >= 0
-        # Ensure the rom is long enough that we can start writing at 'where'.
+        # Ensure the array is long enough that we can start writing at 'where'.
         # Multiplying a list by a negative value produces an empty list, so
         # the resulting behaviour is what we want.
-        rom.extend([0] * (where - len(rom)))
+        to_patch.extend([0] * (where - len(to_patch)))
         # Write the individual components.
         for component in self._components:
             data = component.data(fit_map)
@@ -61,7 +61,7 @@ class Patch:
             # overlapping the end or at the end. Because of the initial padding,
             # it cannot be past the end; and because `where >= 0`, it cannot
             # overlap the beginning.
-            rom[where:end] = data
+            to_patch[where:end] = data
             where = end
 
 
